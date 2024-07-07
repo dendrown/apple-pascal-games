@@ -13,10 +13,6 @@ PROGRAM A2Upper(INPUT, OUTPUT);
 
 USES sysutils;
 
-CONST
-  PAD_OUTPUT = FALSE;                   (* Issues with AppleCommander! *)
-  EX_NOINPUT = 66;
-
 VAR
   LineCnt : Integer;
 
