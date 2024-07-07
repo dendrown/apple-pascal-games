@@ -14,13 +14,13 @@
 (* Neither does it pad the source with nulls to a 1024-byte boundary.       *)
 (*                                                                          *)
 (* The header is added when using AppleCommander to copy the "textified"    *)
-(* source to a disk image. (Make sure to choose type TEXT.) The end padding *)
+(* source to a disk image (make sure to choose type TEXT).  The end padding *)
 (* is added by loading the imported SYSTEM.WRK.TEXT into the Apple Pascal   *)
 (* editor and then immediately saving it again.  This utility includes a    *)
 (* procedure to add the padding (eliminating the need to edit/save the work *)
 (* file), but adding the padding causes AppleCommander to generate an error *)
-(* when importing the file. The procedure is commented out until I can      *)
-(* resolve the issue.                                                       *)
+(* when importing the file.  The procedure is disabled until I can resolve  *)
+(* the issue.                                                               *)
 (* ------------------------------------------------------------------------ *)
 PROGRAM A2Textify(INPUT, OUTPUT);
 
@@ -28,8 +28,8 @@ TYPE
   CharFile = File of Char;
 
 CONST
-  WORK_TEXT = 'system.wrk.text';
-
+  PAD_OUTPUT = FALSE;                   (* Issues with AppleCommander! *)
+  WORK_TEXT  = 'system.wrk.text';
   EX_NOINPUT = 66;
 
 VAR
@@ -100,15 +100,22 @@ VAR
   PadCnt  : LongInt;
 
 BEGIN
-  TxtCnt := FileSize(Dst);
-  WriteLn('Text bytes: ', TxtCnt:3);
+  TxtCnt := FilePos(Dst);
+  WriteLn('Text bytes: ', TxtCnt:6);
 
-  PadCnt := 1024 - (TxtCnt mod 1024);
-  WriteLn('Padding 00: ', PadCnt:3);
-  While PadCnt > 0 Do
+  If PAD_OUTPUT Then
     Begin
-      Write(Dst, Chr($00));             (* ASCII NUL *)
-      PadCnt := PadCnt - 1
+      (* Apple's Reference Manual doesn't state this, but we apparently need
+         at least one NUL byte to terminate the TEXT data.  So, if we are
+         exactly on a block boundary, we'll have an extra empty block. *)
+      PadCnt := 1024 - (TxtCnt mod 1024);
+      WriteLn('Padding 00: ', PadCnt:6);
+
+      While PadCnt > 0 Do
+        Begin
+          Write(Dst, Chr($00));         (* ASCII NUL *)
+          PadCnt := PadCnt - 1
+        End
     End
 END;
 
@@ -150,11 +157,10 @@ BEGIN
       LineCnt := LineCnt + 1;
     End;
   WriteLn;
-  WriteLn('Text lines: ', LineCnt:3);
+  WriteLn('Text lines: ', LineCnt:6);
   
   (* End file on a 1KB boundary *)
-  { FIXME: Adding the END padding confuses AppleCommander }
-  { PadBlock(DstFile); }
+  PadBlock(DstFile);    { FIXME: Adding END padding confuses AppleCommander }
 
   Close(SrcFile);
   Close(DstFile);
