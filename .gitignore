@@ -1,0 +1,6 @@
+.*.swp
+*.o
+system.wrk.text
+
+Tools/a2textify
+01-GuessIt/guessit
