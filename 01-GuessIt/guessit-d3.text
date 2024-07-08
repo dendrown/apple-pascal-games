@@ -2,11 +2,11 @@
  * GUESS IT
  * A computer guessing game
  *)
-Program GuessIt (INPUT, OUTPUT);
+Program GuessIt(INPUT, OUTPUT);
 USES AppleStuff;
 
 CONST
-  MAXTRIES = 6;                  (* User allowed 6 tries to guess number *)
+  MAXTRIES = 6;                 (* User allowed 6 tries to guess number *)
   MAXNUM  = 100;                (* Maximum number *)
   MINNUM  = 1;                  (* Minimum number *)
 
@@ -14,7 +14,7 @@ VAR
   Ch : Char;                    (* Used to answer questions *)
   Guess : Integer;              (* Human's guess *)
   Number: MINNUM..MAXNUM;       (* The number itself *)
-  NumTry: 0..MAXTRIES;           (* Number of times human has guessed *)
+  NumTry: 0..MAXTRIES;          (* Number of times human has guessed *)
 
 
 (*
@@ -61,7 +61,6 @@ END; (* CheckNum *)
  * Gets a guess from the human, with error checking
  *)
 Procedure GetNum;
-
 BEGIN
   Guess := 0;
   WriteLn;
