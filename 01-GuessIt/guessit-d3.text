@@ -2,7 +2,7 @@
  * GUESS IT
  * A computer guessing game
  *)
-Program GuessIt(INPUT, OUTPUT);
+PROGRAM GuessIt(INPUT, OUTPUT);
 USES AppleStuff;
 
 CONST
@@ -21,7 +21,7 @@ VAR
  * INSTRUCTIONS
  * Prints out the instructions
  *)
-Procedure Instructions;
+PROCEDURE Instructions;
 BEGIN
   WriteLn;
   WriteLn('This is GUESS IT.');
@@ -41,7 +41,7 @@ END; (* Instructions *)
  * CHECKNUM
  * Compare the guess against the correct number & give feedback
  *)
-Function CheckNum : Boolean;
+FUNCTION CheckNum : Boolean;
 BEGIN
   If Guess = Number Then
       CheckNum := TRUE
@@ -60,7 +60,7 @@ END; (* CheckNum *)
  * GETNUM
  * Gets a guess from the human, with error checking
  *)
-Procedure GetNum;
+PROCEDURE GetNum;
 BEGIN
   Guess := 0;
   WriteLn;
