@@ -1,6 +1,8 @@
 .*.swp
 *.cfg
 *.o
+*-d3
+*-d3.*.text
 system.wrk.text
 
 Tools/a2textify
