@@ -1,0 +1,117 @@
+(*
+ * GUESS IT
+ * A computer guessing game
+ *)
+Program GuessIt (INPUT, OUTPUT);
+USES AppleStuff;
+
+CONST
+  MAXTRIES = 6;                  (* User allowed 6 tries to guess number *)
+  MAXNUM  = 100;                (* Maximum number *)
+  MINNUM  = 1;                  (* Minimum number *)
+
+VAR
+  Ch : Char;                    (* Used to answer questions *)
+  Guess : Integer;              (* Human's guess *)
+  Number: MINNUM..MAXNUM;       (* The number itself *)
+  NumTry: 0..MAXTRIES;           (* Number of times human has guessed *)
+
+
+(*
+ * INSTRUCTIONS
+ * Prints out the instructions
+ *)
+Procedure Instructions;
+BEGIN
+  WriteLn;
+  WriteLn('This is GUESS IT.');
+  WriteLn;
+  WriteLn('I will choose a number between ',MINNUM,' and ',MAXNUM,'.');
+  WriteLn('You will try to guess that number.');
+  WriteLn('If you guess wrong, I will tell you');
+  WriteLn('if you guessed too high or too low.');
+  WriteLn('You have ',MAXTRIES,' tries to get the number.');
+  WriteLn;
+  WriteLn('Enjoy!');
+  WriteLn
+END; (* Instructions *)
+
+
+(*
+ * CHECKNUM
+ * Compare the guess against the correct number & give feedback
+ *)
+Function CheckNum : Boolean;
+BEGIN
+  If Guess = Number Then
+      CheckNum := TRUE
+  Else
+    Begin
+      CheckNum := FALSE;
+      If Guess > Number Then
+        WriteLn('Too high')
+      Else
+        WriteLn('Too low')
+    End
+END; (* CheckNum *)
+
+
+(*
+ * GETNUM
+ * Gets a guess from the human, with error checking
+ *)
+Procedure GetNum;
+
+BEGIN
+  Guess := 0;
+  WriteLn;
+  Write('Your guess? ');
+
+  (* Wait for a character & check to see that it could be a number *)
+  Get(Input);
+  If NOT (INPUT^ IN ['1'..'9']) Then
+    ReadLn(INPUT)
+  Else
+    ReadLn(Guess);
+
+  (* Make sure the entry isn't invalid *)
+  If (Guess < MINNUM) OR (Guess > MAXNUM) Then
+    Begin
+      WriteLn('Illegal number');
+      GetNum                            (* Recurse for legal input *)
+    End
+END; (* GetNum *)
+
+
+(*
+ * MAIN
+ *)
+BEGIN
+  Instructions;
+  Randomize;
+
+  Ch := 'Y';
+  While (Ch <> 'N') AND (Ch <> 'n') Do
+    Begin
+      Guess  := 0;
+      NumTry := 0;
+
+      (* Choose the lucky number & have them guess *)
+      Number := (Random MOD MAXNUM) + MINNUM;
+      Repeat
+        GetNum;
+        NumTry := NumTry + 1
+      Until CheckNum OR (NumTry >= MAXTRIES);
+      WriteLn;
+
+      (* Did they get it right? *)
+      If Guess = Number Then
+        WriteLn('CORRECT!!!!')
+      Else
+        WriteLn('The number was ', Number);
+
+      WriteLn;
+      WriteLn('Want to try again? ');
+      ReadLn(Ch)
+    End
+END.
