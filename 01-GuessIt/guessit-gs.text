@@ -1,0 +1,263 @@
+(*
+ * GUESS IT
+ * A computer guessing game
+ *)
+PROGRAM GuessIt(INPUT, OUTPUT);
+USES AppleStuff, TurtleGraphics;
+
+CONST
+  MAXTRIES  = 6;            (* User allowed 6 tries to guess number *)
+  MAXNUM    = 100;          (* Maximum number *)
+  MINNUM    = 1;            (* Minimum number *)
+  DIGIT_X   = 100;
+  DIGIT_Y   = 100;
+
+  TEXT_LINE_PX  = 8;        (* Text line height in pixels *)
+  SEGMENT_PX    = 10;       (* Pixel length of a segment for a digit *)
+  SEPARATOR_PX  = 5;        (* Pixel spacing between two digits *)
+
+TYPE
+  Digit         = 0..9;
+  DigitRank     = (ONES, TENS);
+  DigitSegment  = (TOP,TR, BR, BTM, BL, TL, MID);
+  DigitBlock    = Packed Array [0..9] of Set of DigitSegment;
+
+VAR
+  Ch : Char;                    (* Used to answer questions *)
+  Guess : Integer;              (* Human's guess *)
+  Number: MINNUM..MAXNUM;       (* The number itself *)
+  NumTry: 0..MAXTRIES;          (* Number of times human has guessed *)
+  Digits: DigitBlock;           (* Seven-segment display for numbers *)
+
+(*
+ * InitDigits
+ * Initialize the 7-segment digit block
+ *)
+PROCEDURE InitDigits;
+BEGIN
+  Digits[0] := [TOP, TR, BR, BTM, BL, TL     ];
+  Digits[1] := [     TR, BR                  ];
+  Digits[2] := [TOP, TR,     BTM, BL,     MID];
+  Digits[3] := [TOP, TR, BR, BTM,         MID];
+  Digits[4] := [     TR, BR,          TL, MID];
+  Digits[5] := [TOP,     BR, BTM,     TL, MID];
+  Digits[6] := [TOP, TR, BR, BTM, BL,     MID];
+  Digits[7] := [TOP, TR, BR                  ];
+  Digits[8] := [TOP, TR, BR, BTM, BL, TL, MID];
+  Digits[9] := [TOP, TR, BR,          TL, MID]
+END; (* InitDigits *)
+
+
+(*
+ * Init
+ * Initialize what we need to for the game
+ *)
+PROCEDURE Init;
+BEGIN
+  InitDigits;
+  InitTurtle;
+  FillScreen(BLACK);
+  Randomize;
+END; (* Init *)
+
+
+(*
+ * PrepDrawXY
+ * Outputs a string in graphics mode
+ *)
+PROCEDURE PrepDrawXY(X, Y : Integer);
+BEGIN
+  PenColor(NONE);
+  MoveTo(X, Y);
+  PenColor(WHITE)
+END; (* PrepDrawXY *)
+
+
+(*
+ * DrawDigit
+ * Outputs a string in graphics mode
+ *)
+PROCEDURE DrawDigit(N : Digit; Rank : DigitRank);
+VAR
+  X : Integer;
+
+  (* DrawSegment: traces one of the 7-segment display parts *)
+  PROCEDURE DrawSegment(Seg : DigitSegment; Angle : Integer);
+  BEGIN
+    TurnTo(Angle);
+    If Seg IN Digits[N] Then
+      PenColor(WHITE)
+    Else
+      PenColor(NONE);
+    Move(SEGMENT_PX)
+  END;
+
+BEGIN
+  X := DIGIT_X;
+  If Rank = ONES Then
+    X := X + SEGMENT_PX + SEPARATOR_PX;
+
+  (* The requested (X,Y) point is the lower left of the digit.   *)
+  (* This follows WChar/WString, rather than 7-segment displays. *)
+  PrepDraw(X, DIGIT_Y);
+  DrawSegment(BL,   90);
+  DrawSegment(TL ,  90);
+  DrawSegment(TOP,   0);
+  DrawSegment(TR , -90);
+  DrawSegment(BR , -90);
+  DrawSegment(BTM, 180);
+  PrepDraw(X, DIGIT_Y+SEGMENT_PX);
+  DrawSegment(MID,   0)
+END; (* DrawDigit *)
+
+
+(*
+ * DrawNumber
+ * Outputs a two-digit number via a 7-segment display
+ *)
+PROCEDURE DrawNumber(N : Integer);
+BEGIN
+  DrawDigit(N DIV 10, TENS);
+  DrawDigit(N MOD 10, ONES)
+END; (* DrawNumber *)
+
+
+(*
+ * WriteXY
+ * Outputs a string in graphics mode
+ *)
+PROCEDURE WriteXY(X, Y : Integer; TxtMsg : String);
+BEGIN
+  PrepDrawXY(X, Y);
+  WString(TxtMsg)
+END; (* WriteXY *)
+
+
+(*
+ * WriteLnXY
+ * Outputs a string in graphics mode and updates Y
+ * so that it will be ready for the next line
+ *)
+PROCEDURE WriteLnXY(X : Integer; VAR Y : Integer; TxtMsg : String);
+BEGIN
+  WriteXY(X, Y, TxtMsg);
+  Y := Y - TEXT_LINE_PX
+END; (* WriteLnXY *)
+
+
+(*
+ * Prompt
+ * Outputs a string in the status area (bottom of screen)
+ *)
+PROCEDURE Status(TxtMsg : String);
+BEGIN
+  WriteXY(0, 0, '                                        ');
+  WriteXY(0, 0, TxtMsg)
+END; (* Status *)
+
+
+(*
+ * INSTRUCTIONS
+ * Prints out the instructions
+ *)
+PROCEDURE Instructions;
+CONST
+  X = 0;
+
+VAR
+  Y : Integer;
+
+BEGIN
+  Y := 180;
+  WriteLnXY(X, Y, 'This is GUESS IT.');
+
+  Y := Y - TEXT_LINE_PX;
+  WriteLnXY(X, Y, 'I will choose a number between 1 and 100.');
+  WriteLnXY(X, Y, 'You will try to guess that number.');
+  WriteLnXY(X, Y, 'If you guess wrong, I will tell you');
+  WriteLnXY(X, Y, 'if you guessed too high or too low.');
+  WriteLnXY(X, Y, 'You have SIX tries to get the number.');
+
+  Y := Y - TEXT_LINE_PX;
+  WriteXY(X, Y, 'Enjoy!')
+END; (* Instructions *)
+
+
+(*
+ * CHECKNUM
+ * Compare the guess against the correct number & give feedback
+ *)
+FUNCTION CheckNum : Boolean;
+BEGIN
+  If Guess = Number Then
+      CheckNum := TRUE
+  Else
+    Begin
+      CheckNum := FALSE;
+      If Guess > Number Then
+        Status('Too high!')
+      Else
+        Status('Too low!')
+    End
+END; (* CheckNum *)
+
+
+(*
+ * GETNUM
+ * Gets a guess from the human, with error checking
+ *)
+PROCEDURE GetNum;
+BEGIN
+  Guess := 0;
+  Status('Your guess?');
+
+  (* Wait for a character & check to see that it could be a number *)
+  Get(Input);
+  If NOT (INPUT^ IN ['1'..'9']) Then
+    ReadLn(INPUT)
+  Else
+    ReadLn(Guess);
+
+  (* Make sure the entry isn't invalid *)
+  If (Guess < MINNUM) OR (Guess > MAXNUM) Then
+    Begin
+      Status('Illegal number');
+      GetNum                            (* Recurse for legal input *)
+    End
+END; (* GetNum *)
+
+
+(*
+ * MAIN
+ *)
+BEGIN
+  Init;
+  Instructions;
+
+  Ch := 'Y';
+  While (Ch <> 'N') AND (Ch <> 'n') Do
+    Begin
+      Guess  := 0;
+      NumTry := 0;
+
+      (* Choose the lucky number & have them guess *)
+      Number := (Random MOD MAXNUM) + MINNUM;
+      Repeat
+        GetNum;
+        DrawNumber(Guess);
+        NumTry := NumTry + 1
+      Until CheckNum OR (NumTry >= MAXTRIES);
+      WriteLn;
+
+      (* Did they get it right? *)
+      DrawNumber(Number);
+      If Guess = Number Then
+        Status('CORRECT!!!!')
+      Else
+        Status('The number was...');
+
+      Status('Want to try again?');
+      ReadLn(Ch)
+    End;
+    TextMode;
+END.
