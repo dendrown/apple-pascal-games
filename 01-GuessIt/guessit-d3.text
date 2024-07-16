@@ -7,8 +7,8 @@ USES AppleStuff;
 
 CONST
   MAXTRIES = 6;                 (* User allowed 6 tries to guess number *)
-  MAXNUM  = 100;                (* Maximum number *)
-  MINNUM  = 1;                  (* Minimum number *)
+  MAXNUM   = 100;               (* Maximum number *)
+  MINNUM   = 1;                 (* Minimum number *)
 
 VAR
   Ch : Char;                    (* Used to answer questions *)
