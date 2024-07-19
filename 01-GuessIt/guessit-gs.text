@@ -9,14 +9,15 @@ CONST
   MAXTRIES  = 6;            (* User allowed 6 tries to guess number *)
   MAXNUM    = 100;          (* Maximum number *)
   MINNUM    = 1;            (* Minimum number *)
-  DIGIT_X   = 100;
-  DIGIT_Y   = 100;
+  DIGIT_X   = 120;
+  DIGIT_Y   = 80;
 
   TEXT_LINE_PX  = 8;        (* Text line height in pixels *)
   SEGMENT_PX    = 10;       (* Pixel length of a segment for a digit *)
   SEPARATOR_PX  = 5;        (* Pixel spacing between two digits *)
 
 TYPE
+  StatusLine    = 0..1;
   Digit         = 0..9;
   DigitRank     = (ONES, TENS);
   DigitSegment  = (TOP,TR, BR, BTM, BL, TL, MID);
@@ -57,7 +58,7 @@ BEGIN
   InitDigits;
   InitTurtle;
   FillScreen(BLACK);
-  Randomize;
+  Randomize
 END; (* Init *)
 
 
@@ -88,7 +89,7 @@ VAR
     If Seg IN Digits[N] Then
       PenColor(WHITE)
     Else
-      PenColor(NONE);
+      PenColor(BLACK);
     Move(SEGMENT_PX)
   END;
 
@@ -149,10 +150,14 @@ END; (* WriteLnXY *)
  * Prompt
  * Outputs a string in the status area (bottom of screen)
  *)
-PROCEDURE Status(TxtMsg : String);
+PROCEDURE Status(LineNum : StatusLine; TxtMsg : String);
+VAR
+  Y : Integer;
+
 BEGIN
-  WriteXY(0, 0, '                                        ');
-  WriteXY(0, 0, TxtMsg)
+  Y := LineNum * TEXT_LINE_PX;
+  WriteXY(0, Y, '                                        ');
+  WriteXY(0, Y, TxtMsg)
 END; (* Status *)
 
 
@@ -195,9 +200,9 @@ BEGIN
     Begin
       CheckNum := FALSE;
       If Guess > Number Then
-        Status('Too high!')
+        Status(1, 'Too high!')
       Else
-        Status('Too low!')
+        Status(1, 'Too low!')
     End
 END; (* CheckNum *)
 
@@ -207,21 +212,28 @@ END; (* CheckNum *)
  * Gets a guess from the human, with error checking
  *)
 PROCEDURE GetNum;
+VAR
+  Ch : Char;
+
 BEGIN
   Guess := 0;
-  Status('Your guess?');
+  Status(0, 'Your guess?');
 
-  (* Wait for a character & check to see that it could be a number *)
-  Get(Input);
-  If NOT (INPUT^ IN ['1'..'9']) Then
-    ReadLn(INPUT)
-  Else
-    ReadLn(Guess);
+  (* Read in digits until we get a carriage return *)
+  Repeat
+    Read(KEYBOARD, Ch);
+    If Ch IN ['0'..'9'] Then
+      Begin
+        (* Move ones digit to tens & use input as new ones digit *)
+        Guess := 10 * (Guess MOD 10) + Ord(Ch) - Ord('0');
+        DrawNumber(Guess)
+      End
+  Until EOLN(KEYBOARD);
 
   (* Make sure the entry isn't invalid *)
   If (Guess < MINNUM) OR (Guess > MAXNUM) Then
     Begin
-      Status('Illegal number');
+      Status(1, 'Illegal number');
       GetNum                            (* Recurse for legal input *)
     End
 END; (* GetNum *)
@@ -242,9 +254,10 @@ BEGIN
 
       (* Choose the lucky number & have them guess *)
       Number := (Random MOD MAXNUM) + MINNUM;
+      DrawNumber(00);
+      Status(1, '');
       Repeat
         GetNum;
-        DrawNumber(Guess);
         NumTry := NumTry + 1
       Until CheckNum OR (NumTry >= MAXTRIES);
       WriteLn;
@@ -252,12 +265,12 @@ BEGIN
       (* Did they get it right? *)
       DrawNumber(Number);
       If Guess = Number Then
-        Status('CORRECT!!!!')
+        Status(1, 'CORRECT!!!!')
       Else
-        Status('The number was...');
+        Status(1, 'The number was...');
 
-      Status('Want to try again?');
-      ReadLn(Ch)
+      Status(0, 'Want to try again?');
+      Read(KEYBOARD, Ch)
     End;
     TextMode;
 END.
