@@ -1,6 +1,6 @@
 ## Tools
 The programs in this directory are not from the book _Apple Pascal Games_, and they are not written in Apple Pascal.
-They are utilities I have created using [Free Pascal](https://github.com/linappleii/linapple) to aid me in (re)creating
+They are utilities I have created using [Free Pascal](https://www.freepascal.org/) to aid me in (re)creating
 the gaming programs on modern hardware and preparing them to be transferred to Apple II floppies.
 
 These utilities are:
