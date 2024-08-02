@@ -11,6 +11,7 @@ CONST
   MINNUM    = 1;            (* Minimum number *)
   DIGIT_X   = 120;
   DIGIT_Y   = 80;
+  CHROMATIC = 20;           (* Pascal Note() value that begins Middle C *)
 
   TEXT_LINE_PX  = 8;        (* Text line height in pixels *)
   SEGMENT_PX    = 10;       (* Pixel length of a segment for a digit *)
@@ -19,6 +20,9 @@ CONST
 TYPE
   StatusLine    = 0..1;
   Digit         = 0..9;
+  Result        = (WIN, LOSE);
+  Scale         = (C4, C4s, D4, E4f, E4, F4, F4s, G4, G4s, A4, B4f, B4,
+                   C5, C5s, D5);(*_, E5, F5, F5s, G5, G5s, A5, B5f, B5*)
   DigitRank     = (ONES, TENS);
   DigitSegment  = (TOP,TR, BR, BTM, BL, TL, MID);
   DigitBlock    = Packed Array [0..9] of Set of DigitSegment;
@@ -240,6 +244,34 @@ END; (* GetNum *)
 
 
 (*
+ * WINLOSE
+ * Plays a sound for the occasion and displays a message.
+ *)
+PROCEDURE WinLose(News : Result; Msg : String);
+
+  (* Play: play the note n with a short duration *)
+  PROCEDURE Play(n : Scale);
+  BEGIN
+    Note(CHROMATIC + ORD(n), 10);
+  END;
+
+BEGIN
+  Status(1, Msg);
+  (* Play a happy/sad jingle *)
+  Case News of
+    WIN:  Begin
+            Play(G4);
+            Play(B4);
+            Play(D5)
+          End;
+    LOSE: Begin
+            Play(E4);
+            Play(C4);
+          End
+  End
+END; (* WinLose *)
+
+(*
  * MAIN
  *)
 BEGIN
@@ -265,9 +297,9 @@ BEGIN
       (* Did they get it right? *)
       DrawNumber(Number);
       If Guess = Number Then
-        Status(1, 'CORRECT!!!!')
+        WinLose(WIN, 'CORRECT!!!!')
       Else
-        Status(1, 'The number was...');
+        WinLose(LOSE, 'The number was...');
 
       Status(0, 'Want to try again?');
       Read(KEYBOARD, Ch)
