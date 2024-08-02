@@ -67,7 +67,7 @@ BEGIN
   Write('Your guess? ');
 
   (* Wait for a character & check to see that it could be a number *)
-  Get(Input);
+  Get(INPUT);
   If NOT (INPUT^ IN ['1'..'9']) Then
     ReadLn(INPUT)
   Else
