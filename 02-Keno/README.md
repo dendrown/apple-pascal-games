@@ -1,4 +1,4 @@
-## Keno
+## KENO
 In _Apple_Pascal_Games_, Hergert &  Kalash write:
 > Welcome to the Keno lounge.  The atmosphere is comfortable (even if a bit gaudy),
 > the drinks are on the house, and you can play a game of Keno for only $1.20.
