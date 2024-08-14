@@ -81,7 +81,7 @@ END; (* GetSpots *)
  *)
 PROCEDURE Computer;
 VAR
-  Cnt  : 0..NUMCOMPSPOTS;      (* Number of spots player has chosen so far *)
+  Cnt  : 0..NUMCOMPSPOTS;      (* Number the computer has chosen so far *)
   Spot : 0..TOTALSPOTS;
   
 BEGIN
@@ -98,7 +98,18 @@ BEGIN
       Cnt := Cnt + 1;
     End
   End;
+END; (* Computer *)
 
+
+(*
+ * FINDMATCHES
+ * Display results, indicating where the player matches the computer
+ *)
+PROCEDURE FindMatches;
+VAR
+  Spot : 0..TOTALSPOTS;
+
+BEGIN
   (* Print out the computer's spots in order *)
   Spot := 0;
   While Spot < TOTALSPOTS Do
@@ -117,12 +128,12 @@ BEGIN
     Else
       Write('  .. ');
 
-    (* Do a line break every 10 numbers *)
+    (* Do a line break every 10 spots *)
     If (Spot MOD 10) = 0 Then
       WriteLn;
   End;
   WriteLn
-END; (* Computer *)
+END; (* FindMatches *)
 
 
 (*
@@ -162,6 +173,7 @@ BEGIN
     WriteLn(Chr(CH_FF),'Welcome to the Keno Lounge');
     GetSpots;
     Computer;
+    FindMatches;
     Score;
     Write('Want to play again? ');
     ReadLn(Ch)
