@@ -6,7 +6,7 @@ PROGRAM Keno(INPUT, OUTPUT);
 USES AppleStuff;
 
 CONST
-  MINMATCHES    = 3; (*FIXME*)  (* Minimum spot matches for a win *)
+  MINMATCHES    = 5;            (* Minimum spot matches for a win *)
   NUMPLAYSPOTS  = 8;            (* Player gets 8 spots *)
   NUMCOMPSPOTS  = 20;           (* Computer picks 20 spots *)
   TOTALSPOTS    = 80;           (* Total of 80 possible spots *)
@@ -18,6 +18,7 @@ CONST
   PAYOFF8       = 25000;        (* For 5 spots player gets $25000 *)
 
   CH_FF         = 12;           (* ASCII form feed, clears screen *)
+
 TYPE
   SpotType = SET of 1..TOTALSPOTS;
 
@@ -38,9 +39,9 @@ PROCEDURE Initialize;
 BEGIN
   Ch := 'Y';
   Money := 0.00;
-  PayOffs[3] := 1.20;       PayOffs[6] := 2.40;    
   PayOffs[5] := PAYOFF5;    PayOffs[6] := PAYOFF6;
   PayOffs[7] := PAYOFF5;    PayOffs[8] := PAYOFF8;
+  Randomize;
 END; (* Initialize *)
 
 
@@ -50,15 +51,14 @@ END; (* Initialize *)
  *)
 PROCEDURE GetSpots;
 VAR
-  I : 0..NUMPLAYSPOTS;      (* Number of spots player has chosen so far *)
+  Cnt  : 0..NUMPLAYSPOTS;   (* Number of spots player has chosen so far *)
   Spot : Integer;           (* Number just chosen *)
 BEGIN
-  I := 0;
+  Cnt := 0;
   Matches := 0;
   PlaySpots := [];
-  While I < NUMPLAYSPOTS Do
+  While Cnt < NUMPLAYSPOTS Do
   Begin
-    Randomize;
     Write('Your spot: ');
     ReadLn(Spot);
     If (Spot < 1) OR (Spot > TOTALSPOTS) Then
@@ -68,7 +68,7 @@ BEGIN
         WriteLn('You have already chosen spot ',Spot)
       Else
       Begin
-        I := I + 1;
+        Cnt := Cnt + 1;
         PlaySpots := PlaySpots + [Spot]
       End
   End
@@ -81,42 +81,45 @@ END; (* GetSpots *)
  *)
 PROCEDURE Computer;
 VAR
-  I : 0..NUMCOMPSPOTS;      (* Number of spots player has chosen so far *)
+  Cnt  : 0..NUMCOMPSPOTS;      (* Number of spots player has chosen so far *)
   Spot : 0..TOTALSPOTS;
   
 BEGIN
-  I := 0;
+  Cnt := 0;
   CompSpots := [];
   WriteLn('The computer chooses ');
-  While I < NUMCOMPSPOTS Do
+  While Cnt < NUMCOMPSPOTS Do
   Begin
     Spot := 1 + (Random MOD TOTALSPOTS);
     If NOT (Spot IN CompSpots) Then
     Begin
       (* Not a dup; record this spot for the computer *)
       CompSpots := CompSpots + [Spot];
-      I := I + 1;
-      (* Check if player has a match. Note we would have fewer checks
-       * if the computer went first, but that's not normal game play *)
-      If (Spot IN PlaySpots) Then
-        Matches := Matches + 1;
+      Cnt := Cnt + 1;
     End
   End;
 
   (* Print out the computer's spots in order *)
-  I := 0;
   Spot := 0;
-  While I < NUMCOMPSPOTS Do
+  While Spot < TOTALSPOTS Do
   Begin
     Spot := Spot + 1;
+    (* Did the computer choose this spot? *)
     If Spot in CompSpots Then
-    Begin
-      Write(Chr(Ord('A')-64));
-      Write(Spot:3);
-      I := I + 1;
-      If I = 10 Then
-        WriteLn
-    End
+      (* Did the player match it? *)
+      If (Spot IN PlaySpots) Then
+      Begin
+        Matches := Matches + 1;
+        Write(' [',Spot:2,']')
+      End
+      Else
+        Write('  ',Spot:2,' ')
+    Else
+      Write('  .. ');
+
+    (* Do a line break every 10 numbers *)
+    If (Spot MOD 10) = 0 Then
+      WriteLn;
   End;
   WriteLn
 END; (* Computer *)
@@ -141,7 +144,6 @@ BEGIN
   Else
     WriteLn('Sorry. You did''t match any!');
 
-  WriteLn;
   If Money >= 0.00 Then
     WriteLn('Your total money is $',Money:4:2)
   Else
@@ -161,7 +163,6 @@ BEGIN
     GetSpots;
     Computer;
     Score;
-    WriteLn;
     Write('Want to play again? ');
     ReadLn(Ch)
   End;
@@ -170,5 +171,5 @@ BEGIN
   If (Money >= 0) Then
     WriteLn('You made $',Money:5:2)
   Else
-    WriteLn('You lost $',Abs(Money):5:2)
+    WriteLn('You lost $',-Money:5:2)
 END. (* Keno: 5-jul-1981 D.H.; 5-aug-2024 d**3 *)
