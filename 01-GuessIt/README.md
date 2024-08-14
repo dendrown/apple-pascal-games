@@ -5,12 +5,14 @@ In _Apple_Pascal_Games_, Hergert &  Kalash write:
 > you to guess the number.  After each guess you will receive
 > a message:
 > 
-> > TOO HIGH
+>     TOO HIGH
 >
 > or
 > 
-> > TOO LOW
+>     TOO LOW
 >
 > or, if you guess correctly:
-> > CORRECT!!!!
+> 
+>     CORRECT!!!!
+>
 > You have six chances to guess the right number.
