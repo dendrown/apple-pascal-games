@@ -110,7 +110,7 @@ BEGIN
         WriteLn('The number was ', Number);
 
       WriteLn;
-      WriteLn('Want to try again? ');
+      Write('Want to try again? ');
       ReadLn(Ch)
     End
 END.
