@@ -46,13 +46,13 @@ BEGIN
   If Guess = Number Then
       CheckNum := TRUE
   Else
-    Begin
-      CheckNum := FALSE;
-      If Guess > Number Then
-        WriteLn('Too high')
-      Else
-        WriteLn('Too low')
-    End
+  Begin
+    CheckNum := FALSE;
+    If Guess > Number Then
+      WriteLn('Too high')
+    Else
+      WriteLn('Too low')
+  End
 END; (* CheckNum *)
 
 
@@ -75,10 +75,10 @@ BEGIN
 
   (* Make sure the entry isn't invalid *)
   If (Guess < MINNUM) OR (Guess > MAXNUM) Then
-    Begin
-      WriteLn('Illegal number');
-      GetNum                            (* Recurse for legal input *)
-    End
+  Begin
+    WriteLn('Illegal number');
+    GetNum                              (* Recurse for legal input *)
+  End
 END; (* GetNum *)
 
 
@@ -91,26 +91,26 @@ BEGIN
 
   Ch := 'Y';
   While (Ch <> 'N') AND (Ch <> 'n') Do
-    Begin
-      Guess  := 0;
-      NumTry := 0;
+  Begin
+    Guess  := 0;
+    NumTry := 0;
 
-      (* Choose the lucky number & have them guess *)
-      Number := (Random MOD MAXNUM) + MINNUM;
-      Repeat
-        GetNum;
-        NumTry := NumTry + 1
-      Until CheckNum OR (NumTry >= MAXTRIES);
-      WriteLn;
+    (* Choose the lucky number & have them guess *)
+    Number := (Random MOD MAXNUM) + MINNUM;
+    Repeat
+      GetNum;
+      NumTry := NumTry + 1
+    Until CheckNum OR (NumTry >= MAXTRIES);
+    WriteLn;
 
-      (* Did they get it right? *)
-      If Guess = Number Then
-        WriteLn('CORRECT!!!!')
-      Else
-        WriteLn('The number was ', Number);
+    (* Did they get it right? *)
+    If Guess = Number Then
+      WriteLn('CORRECT!!!!')
+    Else
+      WriteLn('The number was ', Number);
 
-      WriteLn;
-      Write('Want to try again? ');
-      ReadLn(Ch)
-    End
+    WriteLn;
+    Write('Want to try again? ');
+    ReadLn(Ch)
+  End
 END.

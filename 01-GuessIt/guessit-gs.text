@@ -201,13 +201,13 @@ BEGIN
   If Guess = Number Then
       CheckNum := TRUE
   Else
-    Begin
-      CheckNum := FALSE;
-      If Guess > Number Then
-        Status(1, 'Too high!')
-      Else
-        Status(1, 'Too low!')
-    End
+  Begin
+    CheckNum := FALSE;
+    If Guess > Number Then
+      Status(1, 'Too high!')
+    Else
+      Status(1, 'Too low!')
+  End
 END; (* CheckNum *)
 
 
@@ -227,19 +227,19 @@ BEGIN
   Repeat
     Read(KEYBOARD, Ch);
     If Ch IN ['0'..'9'] Then
-      Begin
-        (* Move ones digit to tens & use input as new ones digit *)
-        Guess := 10 * (Guess MOD 10) + Ord(Ch) - Ord('0');
-        DrawNumber(Guess)
-      End
+    Begin
+      (* Move ones digit to tens & use input as new ones digit *)
+      Guess := 10 * (Guess MOD 10) + Ord(Ch) - Ord('0');
+      DrawNumber(Guess)
+    End
   Until EOLN(KEYBOARD);
 
   (* Make sure the entry isn't invalid *)
   If (Guess < MINNUM) OR (Guess > MAXNUM) Then
-    Begin
-      Status(1, 'Illegal number');
-      GetNum                            (* Recurse for legal input *)
-    End
+  Begin
+    Status(1, 'Illegal number');
+    GetNum                              (* Recurse for legal input *)
+  End
 END; (* GetNum *)
 
 
@@ -280,29 +280,29 @@ BEGIN
 
   Ch := 'Y';
   While (Ch <> 'N') AND (Ch <> 'n') Do
-    Begin
-      Guess  := 0;
-      NumTry := 0;
+  Begin
+    Guess  := 0;
+    NumTry := 0;
 
-      (* Choose the lucky number & have them guess *)
-      Number := (Random MOD MAXNUM) + MINNUM;
-      DrawNumber(00);
-      Status(1, '');
-      Repeat
-        GetNum;
-        NumTry := NumTry + 1
-      Until CheckNum OR (NumTry >= MAXTRIES);
-      WriteLn;
+    (* Choose the lucky number & have them guess *)
+    Number := (Random MOD MAXNUM) + MINNUM;
+    DrawNumber(00);
+    Status(1, '');
+    Repeat
+      GetNum;
+      NumTry := NumTry + 1
+    Until CheckNum OR (NumTry >= MAXTRIES);
+    WriteLn;
 
-      (* Did they get it right? *)
-      DrawNumber(Number);
-      If Guess = Number Then
-        WinLose(WIN, 'CORRECT!!!!')
-      Else
-        WinLose(LOSE, 'The number was...');
+    (* Did they get it right? *)
+    DrawNumber(Number);
+    If Guess = Number Then
+      WinLose(WIN, 'CORRECT!!!!')
+    Else
+      WinLose(LOSE, 'The number was...');
 
-      Status(0, 'Want to try again?');
-      Read(KEYBOARD, Ch)
-    End;
-    TextMode;
+    Status(0, 'Want to try again?');
+    Read(KEYBOARD, Ch)
+  End;
+  TextMode
 END.
