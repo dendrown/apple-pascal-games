@@ -1,0 +1,275 @@
+(*
+ * KENO
+ * Welcome to the Keno lounge.
+ *)
+PROGRAM Keno(INPUT, OUTPUT);
+USES AppleStuff, TurtleGraphics;
+
+CONST
+  MINMATCHES    = 5;            (* Minimum spot matches for a win *)
+  NUMPLAYSPOTS  = 8;            (* Player gets 8 spots *)
+  NUMCOMPSPOTS  = 20;           (* Computer picks 20 spots *)
+  TOTALSPOTS    = 80;           (* Total of 80 possible spots *)
+
+  COST          = 1.20;         (* Cost to play a game *)
+  PAYOFF5       = 10;           (* For 5 spots player gets $10 *)
+  PAYOFF6       = 100;          (* For 5 spots player gets $100 *)
+  PAYOFF7       = 2200;         (* For 5 spots player gets $2200 *)
+  PAYOFF8       = 25000;        (* For 5 spots player gets $25000 *)
+
+  CH_FF         = 12;           (* ASCII form feed, clears screen *)
+  GRIDCELL      = 16;           (* Pixel width/height of a grid cell *)
+  GRIDXLEFT     = 0;            (* x-coordinate of left side of grid *)
+  GRIDXRIGHT    = 160;          (* x-coordinate of right side of grid *)
+  GRIDYTOP      = 128;          (* x-coordinate of left side of grid *)
+  GRIDYBOTTOM   = 0;            (* x-coordinate of right side of grid *)
+
+TYPE
+  SpotType = SET of 1..TOTALSPOTS;
+
+VAR
+  Ch        : Char;             (* Input to see if user wishes to continue *)
+  CompSpots : SpotType;         (* Spots the computer chooses *)
+  PlaySpots : SpotType;         (* Player's spots *)
+  Matches   : 0..NUMPLAYSPOTS;  (* Player matched computer this many times *)
+  Money     : Real;             (* Player has this much money *)
+  PayOffs   : Array [MINMATCHES..NUMPLAYSPOTS] of Real;
+
+
+(*
+ * PrepDrawXY
+ * Outputs a string in graphics mode
+ *)
+PROCEDURE PrepDrawXY(X, Y : Integer);
+BEGIN
+  PenColor(NONE);
+  MoveTo(X, Y);
+  PenColor(WHITE)
+END; (* PrepDrawXY *)
+
+
+(*
+ * WriteXY
+ * Outputs a string in graphics mode
+ *)
+PROCEDURE WriteXY(X, Y : Integer; TxtMsg : String);
+BEGIN
+  PrepDrawXY(X, Y);
+  WString(TxtMsg)
+END; (* WriteXY *)
+
+
+(*
+ * WriteNumXY
+ * Outputs a one or two digit number in graphics mode
+ *)
+PROCEDURE WriteGridNum(Num : Integer);
+VAR
+    X, Y : Integer;
+    NumTxt : String;
+
+BEGIN
+  (* Determine where the number goes on the grid *)
+  X := ((Num-1) MOD 10) * GRIDCELL + GRIDXLEFT + 2;
+  Y := ((Num-1) DIV 10) * GRIDCELL + GRIDYBOTTOM + 3;
+
+  (* Stringify the number with left padding & write it *)
+  Str(Num, NumTxt);
+  If Num < 10 Then
+    NumTxt := Concat(' ', NumTxt);
+  WriteXY(X, Y, NumTxt);
+END; (* WriteNumXY *)
+
+
+(*
+ * INITGRID
+ * Sets up grid to represent the spread of spots
+ *)
+PROCEDURE InitGrid;
+VAR
+    X, Y : Integer;
+
+BEGIN
+  FillScreen(BLACK);
+
+  (* Horizontal Lines *)
+  Y := GRIDYBOTTOM;
+  Repeat
+    PenColor(NONE);     MoveTo(GRIDXLEFT, Y);
+    PenColor(WHITE);    MoveTo(GRIDXRIGHT, Y);
+    Y := Y + GRIDCELL
+  Until Y >= (8+1)*GRIDCELL;
+
+  (* Vertical Lines *)
+  X := GRIDXLEFT;
+  Repeat
+    PenColor(NONE);     MoveTo(X, GRIDYBOTTOM);
+    PenColor(WHITE);    MoveTo(X, GRIDYTOP);
+    X := X + GRIDCELL
+  Until X >= (10+1)*GRIDCELL;
+
+  (* TEST: DELETE *)
+  For X := 1 to 80 Do
+    WriteGridNum(X)
+  (* TEST: DELETE *)
+END; (* InitGrid *)
+
+
+(*
+ * INITIALIZE
+ * Sets up game and finances
+ *)
+PROCEDURE Initialize;
+BEGIN
+  Ch := 'Y';
+  Money := 0.00;
+  PayOffs[5] := PAYOFF5;    PayOffs[6] := PAYOFF6;
+  PayOffs[7] := PAYOFF5;    PayOffs[8] := PAYOFF8;
+
+  Randomize;
+  InitTurtle;
+  InitGrid
+END; (* Initialize *)
+
+
+(*
+ * GETSPOTS
+ * Get the player's 8 spots from him
+ *)
+PROCEDURE GetSpots;
+VAR
+  Cnt  : 0..NUMPLAYSPOTS;   (* Number of spots player has chosen so far *)
+  Spot : Integer;           (* Number just chosen *)
+BEGIN
+  Cnt := 0;
+  Matches := 0;
+  PlaySpots := [];
+  While Cnt < NUMPLAYSPOTS Do
+  Begin
+    Write('Your spot: ');
+    ReadLn(Spot);
+    If (Spot < 1) OR (Spot > TOTALSPOTS) Then
+      WriteLn('Illegal spot number')
+    Else
+      If Spot IN PlaySpots Then
+        WriteLn('You have already chosen spot ',Spot)
+      Else
+      Begin
+        Cnt := Cnt + 1;
+        PlaySpots := PlaySpots + [Spot]
+      End
+  End
+END; (* GetSpots *)
+
+
+(*
+ * COMPUTER
+ * Have the computer pick its spots
+ *)
+PROCEDURE Computer;
+VAR
+  Cnt  : 0..NUMCOMPSPOTS;      (* Number the computer has chosen so far *)
+  Spot : 0..TOTALSPOTS;
+  
+BEGIN
+  Cnt := 0;
+  CompSpots := [];
+  WriteLn('The computer chooses ');
+  While Cnt < NUMCOMPSPOTS Do
+  Begin
+    Spot := 1 + (Random MOD TOTALSPOTS);
+    If NOT (Spot IN CompSpots) Then
+    Begin
+      (* Not a dup; record this spot for the computer *)
+      CompSpots := CompSpots + [Spot];
+      Cnt := Cnt + 1;
+    End
+  End;
+END; (* Computer *)
+
+
+(*
+ * FINDMATCHES
+ * Display results, indicating where the player matches the computer
+ *)
+PROCEDURE FindMatches;
+VAR
+  Spot : 0..TOTALSPOTS;
+
+BEGIN
+  (* Print out the computer's spots in order *)
+  Spot := 0;
+  While Spot < TOTALSPOTS Do
+  Begin
+    Spot := Spot + 1;
+    (* Did the computer choose this spot? *)
+    If Spot in CompSpots Then
+      (* Did the player match it? *)
+      If (Spot IN PlaySpots) Then
+      Begin
+        Matches := Matches + 1;
+        Write(' [',Spot:2,']')
+      End
+      Else
+        Write('  ',Spot:2,' ')
+    Else
+      Write('  .. ');
+
+    (* Do a line break every 10 spots *)
+    If (Spot MOD 10) = 0 Then
+      WriteLn;
+  End;
+  WriteLn
+END; (* FindMatches *)
+
+
+(*
+ * SCORE
+ * Find out how much (if anything) the player has won
+ *)
+PROCEDURE Score;
+BEGIN
+  Money := Money - COST;
+
+  If Matches >= MIN_MATCHES Then
+  Begin
+    WriteLn('You lucky person, you have ',Matches,' matches.');
+    WriteLn('That means you have made $',PayOffs[Matches]:5:0,'.');
+    Money := Money + PayOffs[Matches]
+  End
+  Else If Matches >= 1 Then
+    WriteLn('Sorry, but you only matched ',Matches,'.')
+  Else
+    WriteLn('Sorry. You did''t match any!');
+
+  If Money >= 0.00 Then
+    WriteLn('Your total money is $',Money:4:2)
+  Else
+    WriteLn('So far you have lost $',-Money:4:2);
+  WriteLn
+END; (* Score *)
+
+
+(*
+ * MAIN
+ *)
+BEGIN
+  Initialize;
+  While (Ch <> 'N') AND (ch <>  'n') Do
+  Begin
+    WriteLn(Chr(CH_FF),'Welcome to the Keno Lounge');
+    GetSpots;
+    Computer;
+    FindMatches;
+    Score;
+    Write('Want to play again? ');
+    ReadLn(Ch)
+  End;
+  WriteLn;
+  WriteLn('All right then leave, see if I care!!!');
+  If (Money >= 0) Then
+    WriteLn('You made $',Money:5:2)
+  Else
+    WriteLn('You lost $',-Money:5:2);
+  TextMode
+END. (* Keno: 5-jul-1981 D.H.; 4-oct-2024 d**3 *)
