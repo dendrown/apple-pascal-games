@@ -17,15 +17,16 @@ CONST
   PAYOFF7       = 2200;         (* For 5 spots player gets $2200 *)
   PAYOFF8       = 25000;        (* For 5 spots player gets $25000 *)
 
-  CH_FF         = 12;           (* ASCII form feed, clears screen *)
   GRIDCELL      = 16;           (* Pixel width/height of a grid cell *)
   GRIDXLEFT     = 0;            (* x-coordinate of left side of grid *)
   GRIDXRIGHT    = 160;          (* x-coordinate of right side of grid *)
   GRIDYTOP      = 128;          (* x-coordinate of left side of grid *)
   GRIDYBOTTOM   = 0;            (* x-coordinate of right side of grid *)
+  TEXTLINE      = 8;        (* Text line height in pixels *)
 
 TYPE
-  SpotType = SET of 1..TOTALSPOTS;
+  SpotType   = SET of 1..TOTALSPOTS;
+  StatusLine = 1..5;
 
 VAR
   Ch        : Char;             (* Input to see if user wishes to continue *)
@@ -49,39 +50,6 @@ END; (* PrepDrawXY *)
 
 
 (*
- * WriteXY
- * Outputs a string in graphics mode
- *)
-PROCEDURE WriteXY(X, Y : Integer; TxtMsg : String);
-BEGIN
-  PrepDrawXY(X, Y);
-  WString(TxtMsg)
-END; (* WriteXY *)
-
-
-(*
- * WriteNumXY
- * Outputs a one or two digit number in graphics mode
- *)
-PROCEDURE WriteGridNum(Num : Integer);
-VAR
-    X, Y : Integer;
-    NumTxt : String;
-
-BEGIN
-  (* Determine where the number goes on the grid *)
-  X := ((Num-1) MOD 10) * GRIDCELL + GRIDXLEFT + 2;
-  Y := ((Num-1) DIV 10) * GRIDCELL + GRIDYBOTTOM + 3;
-
-  (* Stringify the number with left padding & write it *)
-  Str(Num, NumTxt);
-  If Num < 10 Then
-    NumTxt := Concat(' ', NumTxt);
-  WriteXY(X, Y, NumTxt);
-END; (* WriteNumXY *)
-
-
-(*
  * INITGRID
  * Sets up grid to represent the spread of spots
  *)
@@ -95,23 +63,18 @@ BEGIN
   (* Horizontal Lines *)
   Y := GRIDYBOTTOM;
   Repeat
-    PenColor(NONE);     MoveTo(GRIDXLEFT, Y);
-    PenColor(WHITE);    MoveTo(GRIDXRIGHT, Y);
+    PrepDraw(GRIDXLEFT, Y);
+    MoveTo(GRIDXRIGHT, Y);
     Y := Y + GRIDCELL
   Until Y >= (8+1)*GRIDCELL;
 
   (* Vertical Lines *)
   X := GRIDXLEFT;
   Repeat
-    PenColor(NONE);     MoveTo(X, GRIDYBOTTOM);
-    PenColor(WHITE);    MoveTo(X, GRIDYTOP);
+    PrepDraw(X, GRIDYBOTTOM);
+    MoveTo(X, GRIDYTOP);
     X := X + GRIDCELL
-  Until X >= (10+1)*GRIDCELL;
-
-  (* TEST: DELETE *)
-  For X := 1 to 80 Do
-    WriteGridNum(X)
-  (* TEST: DELETE *)
+  Until X >= (10+1)*GRIDCELL
 END; (* InitGrid *)
 
 
@@ -127,9 +90,77 @@ BEGIN
   PayOffs[7] := PAYOFF5;    PayOffs[8] := PAYOFF8;
 
   Randomize;
-  InitTurtle;
-  InitGrid
+  InitTurtle
 END; (* Initialize *)
+
+
+(*
+ * WriteXY
+ * Outputs a string in graphics mode
+ *)
+PROCEDURE WriteXY(X, Y : Integer; TxtMsg : String);
+BEGIN
+  PrepDrawXY(X, Y);
+  WString(TxtMsg)
+END; (* WriteXY *)
+
+
+(*
+ * Status
+ * Outputs a string in the status area (top of screen)
+ *)
+PROCEDURE Status(LineNum : StatusLine; TxtMsg : String);
+VAR
+  Y : Integer;
+
+BEGIN
+  Y := 192 - (LineNum * TEXTLINE);
+  WriteXY(0, Y, '                                        ');
+  WriteXY(0, Y, TxtMsg)
+END; (* Status *)
+
+
+(*
+ * WriteNumXY
+ * Outputs a one or two digit number in graphics mode
+ *)
+PROCEDURE WriteGridNum(Num : Integer);
+VAR
+    X, Y   : Integer;
+    Placer : Integer;
+    NumTxt : String;
+
+BEGIN
+  (* Determine where the number goes on the grid *)
+  Placer := Num - 1;
+  X := (Placer MOD 10) * GRIDCELL + GRIDXLEFT + 2;
+  Y := (Placer DIV 10) * GRIDCELL + GRIDYBOTTOM + 4;
+
+  (* Stringify the number with left padding & write it *)
+  Str(Num, NumTxt);
+  If Num < 10 Then
+    X := X + 4;
+  WriteXY(X, Y, NumTxt);
+END; (* WriteGridNum *)
+
+
+(*
+ * Dollars
+ * Returns a string of the form '$123.45'
+ *)
+PROCEDURE Dollars(Amt : Real;
+                  VAR AmtTxt : String);
+VAR
+    Whole,    Cents     : Integer;
+    WholeTxt, CentsTxt  : String;
+
+BEGIN
+  Whole := Trunc(Amt);
+  Cents := Trunc(100 * (Amt - Whole));
+  Str(Whole, WholeTxt);
+  Str(Cents, CentsTxt);
+  AmtTxt := Concat('$',WholeTxt,'.',CentsTxt)
+END; (* Dollars *)
 
 
 (*
@@ -138,23 +169,28 @@ END; (* Initialize *)
  *)
 PROCEDURE GetSpots;
 VAR
-  Cnt  : 0..NUMPLAYSPOTS;   (* Number of spots player has chosen so far *)
-  Spot : Integer;           (* Number just chosen *)
+  Cnt     : 0..NUMPLAYSPOTS;    (* Number of spots player has chosen so far *)
+  Spot    : Integer;            (* Number just chosen *)
+  SpotTxt : String;
 BEGIN
   Cnt := 0;
   Matches := 0;
   PlaySpots := [];
   While Cnt < NUMPLAYSPOTS Do
   Begin
-    Write('Your spot: ');
+    Status(2, 'Your spot: ');
     ReadLn(Spot);
     If (Spot < 1) OR (Spot > TOTALSPOTS) Then
-      WriteLn('Illegal spot number')
+      Status(2, 'Illegal spot number')
     Else
       If Spot IN PlaySpots Then
-        WriteLn('You have already chosen spot ',Spot)
+      Begin
+        Str(Spot, SpotTxt);
+        Status(2, Concat('You have already chosen spot ',SpotTxt));
+      End
       Else
       Begin
+        WriteGridNum(Spot);
         Cnt := Cnt + 1;
         PlaySpots := PlaySpots + [Spot]
       End
@@ -174,7 +210,7 @@ VAR
 BEGIN
   Cnt := 0;
   CompSpots := [];
-  WriteLn('The computer chooses ');
+  Status(2, 'The computer chooses ');
   While Cnt < NUMCOMPSPOTS Do
   Begin
     Spot := 1 + (Random MOD TOTALSPOTS);
@@ -183,6 +219,7 @@ BEGIN
       (* Not a dup; record this spot for the computer *)
       CompSpots := CompSpots + [Spot];
       Cnt := Cnt + 1;
+      WriteGridNum(Spot)
     End
   End;
 END; (* Computer *)
@@ -228,25 +265,35 @@ END; (* FindMatches *)
  * Find out how much (if anything) the player has won
  *)
 PROCEDURE Score;
+VAR
+  MatchesTxt : String;
+  AmountTxt  : String;
 BEGIN
   Money := Money - COST;
+  Str(Matches, MatchesTxt);
 
   If Matches >= MIN_MATCHES Then
   Begin
-    WriteLn('You lucky person, you have ',Matches,' matches.');
-    WriteLn('That means you have made $',PayOffs[Matches]:5:0,'.');
+    Dollars(PayOffs[Matches], AmountTxt);
+    Status(2, Concat('You lucky person, you have ',MatchesTxt,' matches.'));
+    Status(3, Concat('That means you have made ',AmountTxt,'.'));
     Money := Money + PayOffs[Matches]
   End
   Else If Matches >= 1 Then
-    WriteLn('Sorry, but you only matched ',Matches,'.')
+    Status(2, Concat('Sorry, but you only matched ',MatchesTxt,'.'))
   Else
-    WriteLn('Sorry. You did''t match any!');
+    Status(2, 'Sorry. You did''t match any!');
 
   If Money >= 0.00 Then
-    WriteLn('Your total money is $',Money:4:2)
+  Begin
+    Dollars(Money, AmountTxt);
+    Status(4, Concat('Your total money is ',AmountTxt))
+  End
   Else
-    WriteLn('So far you have lost $',-Money:4:2);
-  WriteLn
+  Begin
+    Dollars(-Money, AmountTxt);
+    Status(4, Concat('So far you have lost ',AmountTxt))
+  End
 END; (* Score *)
 
 
@@ -257,12 +304,13 @@ BEGIN
   Initialize;
   While (Ch <> 'N') AND (ch <>  'n') Do
   Begin
-    WriteLn(Chr(CH_FF),'Welcome to the Keno Lounge');
+    InitGrid;
+    Status(1, 'Welcome to the Keno Lounge');
     GetSpots;
     Computer;
     FindMatches;
     Score;
-    Write('Want to play again? ');
+    Status(5, 'Want to play again? ');
     ReadLn(Ch)
   End;
   WriteLn;
