@@ -151,7 +151,7 @@ END; (* WriteLnXY *)
 
 
 (*
- * Prompt
+ * Status
  * Outputs a string in the status area (bottom of screen)
  *)
 PROCEDURE Status(LineNum : StatusLine; TxtMsg : String);
