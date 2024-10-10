@@ -28,7 +28,7 @@ TYPE
   CharFile = File of Char;
 
 CONST
-  PAD_OUTPUT = FALSE;                   (* Issues with AppleCommander! *)
+  PAD_OUTPUT = TRUE;                    (* Issues with AppleCommander! *)
   WORK_TEXT  = 'system.wrk.text';
   EX_NOINPUT = 66;
 

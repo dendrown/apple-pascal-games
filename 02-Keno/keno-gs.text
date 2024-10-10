@@ -17,16 +17,21 @@ CONST
   PAYOFF7       = 2200;         (* For 5 spots player gets $2200 *)
   PAYOFF8       = 25000;        (* For 5 spots player gets $25000 *)
 
-  GRIDCELL      = 16;           (* Pixel width/height of a grid cell *)
+  GRIDCELL      = 17;           (* Pixel width/height of a grid cell *)
   GRIDXLEFT     = 0;            (* x-coordinate of left side of grid *)
-  GRIDXRIGHT    = 160;          (* x-coordinate of right side of grid *)
-  GRIDYTOP      = 128;          (* x-coordinate of left side of grid *)
+  GRIDXRIGHT    = 170;          (* x-coordinate of right side of grid *)
+  GRIDYTOP      = 136;          (* x-coordinate of left side of grid *)
   GRIDYBOTTOM   = 0;            (* x-coordinate of right side of grid *)
-  TEXTLINE      = 8;        (* Text line height in pixels *)
+  TEXTLINE      = 8;            (* Text line height in pixels *)
+
+  CHARNORMAL    = 10;           (* Standard white characters on black screen *)
+  CHARREVERSE   = 5;            (* Reversed black characters on white background *)
+  CHARXOR       = 6;            (* Toggle black/white characters *)
 
 TYPE
   SpotType   = SET of 1..TOTALSPOTS;
   StatusLine = 1..5;
+  HighLight  = (HLPLAYER, HLCOMPUTER, HLMATCH);
 
 VAR
   Ch        : Char;             (* Input to see if user wishes to continue *)
@@ -124,7 +129,8 @@ END; (* Status *)
  * WriteNumXY
  * Outputs a one or two digit number in graphics mode
  *)
-PROCEDURE WriteGridNum(Num : Integer);
+PROCEDURE WriteGridNum(Num : Integer;
+                       Effect : HighLight);
 VAR
     X, Y   : Integer;
     Placer : Integer;
@@ -133,14 +139,28 @@ VAR
 BEGIN
   (* Determine where the number goes on the grid *)
   Placer := Num - 1;
-  X := (Placer MOD 10) * GRIDCELL + GRIDXLEFT + 2;
-  Y := (Placer DIV 10) * GRIDCELL + GRIDYBOTTOM + 4;
+  X := (Placer MOD 10) * GRIDCELL + GRIDXLEFT;
+  Y := (Placer DIV 10) * GRIDCELL + GRIDYBOTTOM;
+
+  ViewPort(X, X+GRIDCELL, Y, Y+GRIDCELL);
+
+  (* Highlight values to indicate player spots and winning matches *)
+  If Effect = HLPLAYER Then
+  Begin
+    CharType(CHARREVERSE);
+    FillScreen(WHITE)
+  End;
 
   (* Stringify the number with left padding & write it *)
   Str(Num, NumTxt);
   If Num < 10 Then
-    X := X + 4;
-  WriteXY(X, Y, NumTxt);
+    NumTxt := Concat(' ', NumTxt);
+
+  WriteXY(X+2, Y+4, NumTxt);
+
+  (* Reset graphic defaults *)
+  ViewPort(0, 279, 0, 191);
+  CharType(CHARNORMAL)
 END; (* WriteGridNum *)
 
 
@@ -170,6 +190,7 @@ END; (* Dollars *)
 PROCEDURE GetSpots;
 VAR
   Cnt     : 0..NUMPLAYSPOTS;    (* Number of spots player has chosen so far *)
+  Digit   : Char;               (* Digits player enters when chosing spot *)
   Spot    : Integer;            (* Number just chosen *)
   SpotTxt : String;
 BEGIN
@@ -178,19 +199,30 @@ BEGIN
   PlaySpots := [];
   While Cnt < NUMPLAYSPOTS Do
   Begin
+    Spot := 0;
     Status(2, 'Your spot: ');
-    ReadLn(Spot);
+    Status(4, '');              (* Clear previous error message *)
+    Repeat
+      Read(KEYBOARD, Digit);
+      If Digit IN ['0'..'9'] Then
+      Begin
+        (* Move ones digit to tens & use input as new ones digit *)
+        Spot := 10 * (Spot MOD 10) + Ord(Digit) - Ord('0');
+        WChar(Digit);
+      End
+    Until EOLN(KEYBOARD);
+
     If (Spot < 1) OR (Spot > TOTALSPOTS) Then
-      Status(2, 'Illegal spot number')
+      Status(4, 'Illegal spot number')
     Else
       If Spot IN PlaySpots Then
       Begin
         Str(Spot, SpotTxt);
-        Status(2, Concat('You have already chosen spot ',SpotTxt));
+        Status(4, Concat('You have already chosen spot ',SpotTxt));
       End
       Else
       Begin
-        WriteGridNum(Spot);
+        WriteGridNum(Spot, HLPLAYER);
         Cnt := Cnt + 1;
         PlaySpots := PlaySpots + [Spot]
       End
@@ -219,7 +251,7 @@ BEGIN
       (* Not a dup; record this spot for the computer *)
       CompSpots := CompSpots + [Spot];
       Cnt := Cnt + 1;
-      WriteGridNum(Spot)
+      WriteGridNum(Spot, HLCOMPUTER)
     End
   End;
 END; (* Computer *)
@@ -245,12 +277,8 @@ BEGIN
       If (Spot IN PlaySpots) Then
       Begin
         Matches := Matches + 1;
-        Write(' [',Spot:2,']')
-      End
-      Else
-        Write('  ',Spot:2,' ')
-    Else
-      Write('  .. ');
+        WriteGridNum(Spot, HLMATCH)
+      End;
 
     (* Do a line break every 10 spots *)
     If (Spot MOD 10) = 0 Then
@@ -311,13 +339,15 @@ BEGIN
     FindMatches;
     Score;
     Status(5, 'Want to play again? ');
-    ReadLn(Ch)
+    Read(KEYBOARD, Ch)
   End;
+
+  (* Say goodbye... *)
+  TextMode;
   WriteLn;
   WriteLn('All right then leave, see if I care!!!');
   If (Money >= 0) Then
     WriteLn('You made $',Money:5:2)
   Else
-    WriteLn('You lost $',-Money:5:2);
-  TextMode
+    WriteLn('You lost $',-Money:5:2)
 END. (* Keno: 5-jul-1981 D.H.; 4-oct-2024 d**3 *)
