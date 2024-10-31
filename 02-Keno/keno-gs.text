@@ -18,10 +18,8 @@ CONST
   PAYOFF8       = 25000;        (* For 5 spots player gets $25000 *)
 
   GRIDCELL      = 17;           (* Pixel width/height of a grid cell *)
-  GRIDXLEFT     = 0;            (* x-coordinate of left side of grid *)
-  GRIDXRIGHT    = 170;          (* x-coordinate of right side of grid *)
-  GRIDYTOP      = 136;          (* x-coordinate of left side of grid *)
-  GRIDYBOTTOM   = 0;            (* x-coordinate of right side of grid *)
+  GRIDXLEFT     = 30;           (* x-coordinate of left side of grid *)
+  GRIDYBOTTOM   = 10;           (* x-coordinate of right side of grid *)
   TEXTLINE      = 8;            (* Text line height in pixels *)
 
   CHARNORMAL    = 10;           (* Standard white characters on black screen *)
@@ -60,26 +58,30 @@ END; (* PrepDrawXY *)
  *)
 PROCEDURE InitGrid;
 VAR
-    X, Y : Integer;
+    X, Y      : Integer;
+    GridRight : Integer;
+    GridTop   : Integer;
 
 BEGIN
   FillScreen(BLACK);
+  GridRight := GRIDXLEFT + 10*GRIDCELL;
+  GridTop   := GRIDYBOTTOM + 8*GRIDCELL;
 
   (* Horizontal Lines *)
   Y := GRIDYBOTTOM;
   Repeat
     PrepDraw(GRIDXLEFT, Y);
-    MoveTo(GRIDXRIGHT, Y);
+    MoveTo(GridRight, Y);
     Y := Y + GRIDCELL
-  Until Y >= (8+1)*GRIDCELL;
+  Until Y >= GridTop+1;
 
   (* Vertical Lines *)
   X := GRIDXLEFT;
   Repeat
     PrepDraw(X, GRIDYBOTTOM);
-    MoveTo(X, GRIDYTOP);
+    MoveTo(X, GridTop);
     X := X + GRIDCELL
-  Until X >= (10+1)*GRIDCELL
+  Until X >= GridRight+1
 END; (* InitGrid *)
 
 
@@ -134,13 +136,18 @@ PROCEDURE WriteGridNum(Num : Integer;
 VAR
     X, Y   : Integer;
     Placer : Integer;
+    Ones   : Integer;
     NumTxt : String;
 
 BEGIN
-  (* Determine where the number goes on the grid *)
-  Placer := Num - 1;
-  X := (Placer MOD 10) * GRIDCELL + GRIDXLEFT;
-  Y := (Placer DIV 10) * GRIDCELL + GRIDYBOTTOM;
+  (* Determine where the number ([1..80] goes on the grid
+   *  X: slide the digit from the orgin (left) towards the right
+   *  Y: move up from orgin (bottom), flipping rows from 70s upwards towards 0s
+   *)
+  Placer := Num - 1;                (* Convert num 1..10 to placement 0..9 *)
+  Ones := Placer MOD 10;            (* Lower digit in placement *)
+  X := Ones * GRIDCELL + GRIDXLEFT;
+  Y := ((Placer + 70 - (2 * (Placer - Ones))) DIV 10) * GRIDCELL + GRIDYBOTTOM;
 
   ViewPort(X, X+GRIDCELL, Y, Y+GRIDCELL);
 
