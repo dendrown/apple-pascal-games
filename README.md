@@ -1,7 +1,7 @@
 # apple-pascal-games
 This repository contains programs from _Apple Pascal Games_ (1981) by Douglas Hergert and Joseph T. Kalash.
 
-![Apple Pascal Games](images/apple_pascal_games.jpg)
+<img src="images/apple_pascal_games.jpg" alt="Apple Pascal Games" width="25%"/>
 
 Each chapter in the book is devoted to an individual game.  Likewise, the source directories in this repository begin with
 the chapter number.  For example, the directory [01-GuessIt/](https://github.com/dendrown/apple-pascal-games/tree/main/01-GuessIt)
