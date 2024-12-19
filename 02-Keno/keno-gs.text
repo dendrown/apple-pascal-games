@@ -2,6 +2,7 @@
  * KENO
  * Welcome to the Keno lounge.
  *)
+(*$S+*)
 PROGRAM Keno(INPUT, OUTPUT);
 USES AppleStuff, TurtleGraphics;
 
@@ -22,14 +23,19 @@ CONST
   GRIDYBOTTOM   = 10;           (* x-coordinate of right side of grid *)
   TEXTLINE      = 8;            (* Text line height in pixels *)
 
-  CHARNORMAL    = 10;           (* Standard white characters on black screen *)
-  CHARREVERSE   = 5;            (* Reversed black characters on white background *)
+  CHARNORMAL    = 10;           (* Standard white chars on black screen *)
+  CHARREVERSE   = 5;            (* Reversed black chars on white background *)
   CHARXOR       = 6;            (* Toggle black/white characters *)
+  CHROMATIC     = 8;            (* Notes begin at C in the 3rd octive *)
 
 TYPE
   SpotType   = SET of 1..TOTALSPOTS;
   StatusLine = 1..5;
   HighLight  = (HLPLAYER, HLCOMPUTER, HLMATCH);
+  Event      = (SPOTTING, MISSING, MATCHING, WINNING, LOSING);
+  Scale      = (C3, C3s, D3, E3f, E3, F3, F3s, G3, G3s, A3, B3f, B3,
+                C4, C4s, D4, E4f, E4, F4, F4s, G4, G4s, A4, B4f, B4,
+                C5, C5s, D5);(*_, E5, F5, F5s, G5, G5s, A5, B5f, B5*)
 
 VAR
   Ch        : Char;             (* Input to see if user wishes to continue *)
@@ -172,6 +178,29 @@ END; (* WriteGridNum *)
 
 
 (*
+ * SoundEvent
+ * Plays a sound for the occasion and displays a message.
+ *)
+PROCEDURE SoundEvent(Evt : Event; Msg : String);
+
+  (* Play: play the note n with a short duration *)
+  PROCEDURE Play(n : Scale);
+  BEGIN
+    Note(CHROMATIC + ORD(n), 10);
+  END;
+
+BEGIN
+  Status(2, Msg);
+  Case Evt of
+    SPOTTING: Begin Play(B3); Play(G3);             End;
+    MISSING:  Play(E4);
+    WINNING:  Begin Play(G4); Play(B4); Play(D5)    End;
+    LOSING:   Begin Play(E4); Play(C4)              End
+  End
+END; (* SoundEvent *)
+
+
+(*
  * Dollars
  * Returns a string of the form '$123.45'
  *)
@@ -219,17 +248,17 @@ BEGIN
       End
     Until EOLN(KEYBOARD);
 
+    Str(Spot, SpotTxt);
+
     If (Spot < 1) OR (Spot > TOTALSPOTS) Then
       Status(4, 'Illegal spot number')
     Else
       If Spot IN PlaySpots Then
-      Begin
-        Str(Spot, SpotTxt);
-        Status(4, Concat('You have already chosen spot ',SpotTxt));
-      End
+        Status(4, Concat('You have already chosen spot ',SpotTxt))
       Else
       Begin
         WriteGridNum(Spot, HLPLAYER);
+        SoundEvent(SPOTTING, Concat('SPOT: ',SpotTxt));
         Cnt := Cnt + 1;
         PlaySpots := PlaySpots + [Spot]
       End
@@ -310,14 +339,15 @@ BEGIN
   If Matches >= MIN_MATCHES Then
   Begin
     Dollars(PayOffs[Matches], AmountTxt);
-    Status(2, Concat('You lucky person, you have ',MatchesTxt,' matches.'));
+    SoundEvent(WINNING,
+               Concat('You lucky person, you have ',MatchesTxt,' matches.'));
     Status(3, Concat('That means you have made ',AmountTxt,'.'));
     Money := Money + PayOffs[Matches]
   End
   Else If Matches >= 1 Then
-    Status(2, Concat('Sorry, but you only matched ',MatchesTxt,'.'))
+    SoundEvent(LOSING, Concat('Sorry, but you only matched ',MatchesTxt,'.'))
   Else
-    Status(2, 'Sorry. You did''t match any!');
+    SoundEvent(LOSING, 'Sorry. You did''t match any!');
 
   If Money >= 0.00 Then
   Begin
@@ -357,4 +387,4 @@ BEGIN
     WriteLn('You made $',Money:5:2)
   Else
     WriteLn('You lost $',-Money:5:2)
-END. (* Keno: 5-jul-1981 D.H.; 4-oct-2024 d**3 *)
+END. (* Keno: 5-jul-1981 D.H.; 19-nov-2024 d**3 *)
