@@ -32,7 +32,7 @@ TYPE
   SpotType   = SET of 1..TOTALSPOTS;
   StatusLine = 1..5;
   HighLight  = (HLPLAYER, HLCOMPUTER, HLMATCH);
-  Event      = (SPOTTING, MISSING, MATCHING, WINNING, LOSING);
+  Event      = (SPOTTING, MISSING, WINNING, LOSING);
   Scale      = (C3, C3s, D3, E3f, E3, F3, F3s, G3, G3s, A3, B3f, B3,
                 C4, C4s, D4, E4f, E4, F4, F4s, G4, G4s, A4, B4f, B4,
                 C5, C5s, D5);(*_, E5, F5, F5s, G5, G5s, A5, B5f, B5*)
@@ -237,7 +237,6 @@ BEGIN
   Begin
     Spot := 0;
     Status(2, 'Your spot: ');
-    Status(4, '');              (* Clear previous error message *)
     Repeat
       Read(KEYBOARD, Digit);
       If Digit IN ['0'..'9'] Then
@@ -252,16 +251,16 @@ BEGIN
 
     If (Spot < 1) OR (Spot > TOTALSPOTS) Then
       Status(4, 'Illegal spot number')
+    Else If Spot IN PlaySpots Then
+      Status(4, Concat('You have already chosen spot ',SpotTxt))
     Else
-      If Spot IN PlaySpots Then
-        Status(4, Concat('You have already chosen spot ',SpotTxt))
-      Else
-      Begin
-        WriteGridNum(Spot, HLPLAYER);
-        SoundEvent(SPOTTING, Concat('SPOT: ',SpotTxt));
-        Cnt := Cnt + 1;
-        PlaySpots := PlaySpots + [Spot]
-      End
+    Begin
+      SoundEvent(SPOTTING, Concat('SPOT: ',SpotTxt));
+      WriteGridNum(Spot, HLPLAYER);
+      Cnt := Cnt + 1;
+      PlaySpots := PlaySpots + [Spot]
+    End;
+    Status(4, '')               (* Clear previous number/error *)
   End
 END; (* GetSpots *)
 
@@ -272,13 +271,14 @@ END; (* GetSpots *)
  *)
 PROCEDURE Computer;
 VAR
-  Cnt  : 0..NUMCOMPSPOTS;      (* Number the computer has chosen so far *)
-  Spot : 0..TOTALSPOTS;
-  
+  Cnt     : 0..NUMCOMPSPOTS;    (* Number the computer has chosen so far *)
+  Spot    : 0..TOTALSPOTS;
+  SpotTxt : String;
+
 BEGIN
   Cnt := 0;
   CompSpots := [];
-  Status(2, 'The computer chooses ');
+  Status(4, 'The computer chooses...');
   While Cnt < NUMCOMPSPOTS Do
   Begin
     Spot := 1 + (Random MOD TOTALSPOTS);
@@ -287,41 +287,23 @@ BEGIN
       (* Not a dup; record this spot for the computer *)
       CompSpots := CompSpots + [Spot];
       Cnt := Cnt + 1;
-      WriteGridNum(Spot, HLCOMPUTER)
-    End
-  End;
-END; (* Computer *)
+      Str(Spot, SpotTxt);
 
-
-(*
- * FINDMATCHES
- * Display results, indicating where the player matches the computer
- *)
-PROCEDURE FindMatches;
-VAR
-  Spot : 0..TOTALSPOTS;
-
-BEGIN
-  (* Print out the computer's spots in order *)
-  Spot := 0;
-  While Spot < TOTALSPOTS Do
-  Begin
-    Spot := Spot + 1;
-    (* Did the computer choose this spot? *)
-    If Spot in CompSpots Then
-      (* Did the player match it? *)
+      (* Check matches as we go so we can play the proper sound *)
       If (Spot IN PlaySpots) Then
       Begin
         Matches := Matches + 1;
+        SoundEvent(WINNING, Concat('Match: ',SpotTxt));
         WriteGridNum(Spot, HLMATCH)
-      End;
-
-    (* Do a line break every 10 spots *)
-    If (Spot MOD 10) = 0 Then
-      WriteLn;
-  End;
-  WriteLn
-END; (* FindMatches *)
+      End
+      Else
+      Begin
+        SoundEvent(MISSING, Concat('Miss: ',SpotTxt));
+        WriteGridNum(Spot, HLCOMPUTER)
+      End
+    End
+  End
+END; (* Computer *)
 
 
 (*
@@ -373,7 +355,6 @@ BEGIN
     Status(1, 'Welcome to the Keno Lounge');
     GetSpots;
     Computer;
-    FindMatches;
     Score;
     Status(5, 'Want to play again? ');
     Read(KEYBOARD, Ch)
@@ -387,4 +368,4 @@ BEGIN
     WriteLn('You made $',Money:5:2)
   Else
     WriteLn('You lost $',-Money:5:2)
-END. (* Keno: 5-jul-1981 D.H.; 19-nov-2024 d**3 *)
+END. (* Keno: 5-jul-1981 D.H.; 19-dec-2024 d**3 *)
